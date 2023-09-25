@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import textwrap
+from io import TextIOWrapper
 
 import click
 import jsonschema
@@ -26,7 +27,8 @@ BUILTIN_SCHEMA_NAMES = [f"vendor.{k}" for k in SCHEMA_CATALOG.keys()] + [
     f"custom.{k}" for k in CUSTOM_SCHEMA_NAMES
 ]
 BUILTIN_SCHEMA_CHOICES = (
-    BUILTIN_SCHEMA_NAMES + list(SCHEMA_CATALOG.keys()) + CUSTOM_SCHEMA_NAMES
+        BUILTIN_SCHEMA_NAMES + list(
+    SCHEMA_CATALOG.keys()) + CUSTOM_SCHEMA_NAMES
 )
 
 
@@ -55,6 +57,18 @@ def pretty_helptext_list(values: list[str] | tuple[str, ...]) -> str:
     )
 
 
+class FilesDefaultStdin(click.Argument):
+    def __init__(self, *args, **kwargs):
+        kwargs['nargs'] = -1
+        kwargs['type'] = click.File('r')  # will work with '-' for stdin?
+        # kwargs['type'] = click.Path()  # works with '/dev/stdin'
+        super().__init__(*args, **kwargs)
+
+    def process_value(self, ctx, value):
+        return super().process_value(ctx, value or ('-',))
+        # return super().process_value(ctx, value or ('/dev/stdin',))
+
+
 @click.command(
     "check-jsonschema",
     help="""\
@@ -75,30 +89,30 @@ For the "regex" format, there are multiple modes which can be specified with
 \b
 The '--builtin-schema' flag supports the following schema names:
 """
-    + pretty_helptext_list(BUILTIN_SCHEMA_NAMES)
-    + """\
+         + pretty_helptext_list(BUILTIN_SCHEMA_NAMES)
+         + """\
 
 \b
 The '--disable-formats' flag supports the following formats:
 """
-    + pretty_helptext_list(KNOWN_FORMATS),
+         + pretty_helptext_list(KNOWN_FORMATS),
 )
 @click.help_option("-h", "--help")
 @click.version_option()
 @click.option(
     "--schemafile",
     help=(
-        "The path to a file containing the JSON Schema to use or an "
-        "HTTP(S) URI for the schema. If a remote file is used, "
-        "it will be downloaded and cached locally based on mtime."
+            "The path to a file containing the JSON Schema to use or an "
+            "HTTP(S) URI for the schema. If a remote file is used, "
+            "it will be downloaded and cached locally based on mtime."
     ),
 )
 @click.option(
     "--base-uri",
     help=(
-        "Override the base URI for the schema. The default behavior is to "
-        "follow the behavior specified by the JSON Schema spec, which is to "
-        "prefer an explicit '$id' and failover to the retrieval URI."
+            "Override the base URI for the schema. The default behavior is to "
+            "follow the behavior specified by the JSON Schema spec, which is to "
+            "prefer an explicit '$id' and failover to the retrieval URI."
     ),
 )
 @click.option(
@@ -111,8 +125,8 @@ The '--disable-formats' flag supports the following formats:
     "--check-metaschema",
     is_flag=True,
     help=(
-        "Instead of validating the instances against a schema, treat each file as a "
-        "schema and validate them under their matching metaschemas."
+            "Instead of validating the instances against a schema, treat each file as a "
+            "schema and validate them under their matching metaschemas."
     ),
 )
 @click.option(
@@ -123,26 +137,27 @@ The '--disable-formats' flag supports the following formats:
 @click.option(
     "--cache-filename",
     help=(
-        "The name to use for caching a remote schema. "
-        "Defaults to the last slash-delimited part of the URI."
+            "The name to use for caching a remote schema. "
+            "Defaults to the last slash-delimited part of the URI."
     ),
 )
 @click.option(
     "--disable-formats",
     multiple=True,
     help="Disable specific format checks in the schema. "
-    "Pass '*' to disable all format checks.",
+         "Pass '*' to disable all format checks.",
     type=CommaDelimitedList(choices=("*", *KNOWN_FORMATS)),
     metavar="{*|FORMAT,FORMAT,...}",
 )
 @click.option(
     "--format-regex",
     help=(
-        "Set the mode of format validation for regexes. "
-        "If `--disable-formats regex` is used, this option has no effect."
+            "Set the mode of format validation for regexes. "
+            "If `--disable-formats regex` is used, this option has no effect."
     ),
     default=RegexVariantName.default.value,
-    type=click.Choice([x.value for x in RegexVariantName], case_sensitive=False),
+    type=click.Choice([x.value for x in RegexVariantName],
+                      case_sensitive=False),
 )
 @click.option(
     "--default-filetype",
@@ -154,8 +169,8 @@ The '--disable-formats' flag supports the following formats:
 @click.option(
     "--traceback-mode",
     help=(
-        "Set the mode of presentation for error traces. "
-        "Defaults to shortened tracebacks."
+            "Set the mode of presentation for error traces. "
+            "Defaults to shortened tracebacks."
     ),
     type=click.Choice(("full", "short")),
     default="short",
@@ -163,27 +178,27 @@ The '--disable-formats' flag supports the following formats:
 @click.option(
     "--data-transform",
     help=(
-        "Select a builtin transform which should be applied to instancefiles before "
-        "they are checked."
+            "Select a builtin transform which should be applied to instancefiles before "
+            "they are checked."
     ),
     type=click.Choice(tuple(TRANSFORM_LIBRARY.keys())),
 )
 @click.option(
     "--fill-defaults",
     help=(
-        "Autofill 'default' values prior to validation. "
-        "This may conflict with certain third-party validators used with "
-        "'--validator-class'"
+            "Autofill 'default' values prior to validation. "
+            "This may conflict with certain third-party validators used with "
+            "'--validator-class'"
     ),
     is_flag=True,
 )
 @click.option(
     "--validator-class",
     help=(
-        "The fully qualified name of a python validator to use in place of "
-        "the 'jsonschema' library validators, in the form of '<package>:<class>'. "
-        "The validator must be importable in the same environment where "
-        "'check-jsonschema' is run."
+            "The fully qualified name of a python validator to use in place of "
+            "the 'jsonschema' library validators, in the form of '<package>:<class>'. "
+            "The validator must be importable in the same environment where "
+            "'check-jsonschema' is run."
     ),
     type=ValidatorClassName(),
 )
@@ -206,8 +221,8 @@ The '--disable-formats' flag supports the following formats:
     "-v",
     "--verbose",
     help=(
-        "Increase output verbosity. On validation errors, this may be especially "
-        "useful when oneOf or anyOf is used in the schema."
+            "Increase output verbosity. On validation errors, this may be especially "
+            "useful when oneOf or anyOf is used in the schema."
     ),
     count=True,
 )
@@ -217,26 +232,28 @@ The '--disable-formats' flag supports the following formats:
     help="Reduce output verbosity",
     count=True,
 )
-@click.argument("instancefiles", required=True, nargs=-1)
+# @click.argument("instancefiles", required=True, nargs=-1)
+@click.argument("instancefiles", cls=FilesDefaultStdin)
 def main(
-    *,
-    schemafile: str | None,
-    builtin_schema: str | None,
-    base_uri: str | None,
-    check_metaschema: bool,
-    no_cache: bool,
-    cache_filename: str | None,
-    disable_formats: tuple[list[str], ...],
-    format_regex: str,
-    default_filetype: str,
-    traceback_mode: str,
-    data_transform: str | None,
-    fill_defaults: bool,
-    validator_class: type[jsonschema.protocols.Validator] | None,
-    output_format: str,
-    verbose: int,
-    quiet: int,
-    instancefiles: tuple[str, ...],
+        *,
+        schemafile: str | None,
+        builtin_schema: str | None,
+        base_uri: str | None,
+        check_metaschema: bool,
+        no_cache: bool,
+        cache_filename: str | None,
+        disable_formats: tuple[list[str], ...],
+        format_regex: str,
+        default_filetype: str,
+        traceback_mode: str,
+        data_transform: str | None,
+        fill_defaults: bool,
+        validator_class: type[jsonschema.protocols.Validator] | None,
+        output_format: str,
+        verbose: int,
+        quiet: int,
+        # instancefiles: tuple[str, ...],
+        instancefiles: tuple[TextIOWrapper, ...],
 ) -> None:
     args = ParseResult()
 
@@ -245,6 +262,7 @@ def main(
 
     args.base_uri = base_uri
     args.instancefiles = instancefiles
+    print(list(i.name for i in instancefiles))
 
     normalized_disable_formats: tuple[str, ...] = tuple(
         f for sublist in disable_formats for f in sublist
