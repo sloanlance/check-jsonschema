@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pathlib
 import typing as t
 
 import click
@@ -47,7 +46,7 @@ class SchemaChecker:
         raise _Exit(1)
 
     def get_validator(
-        self, path: pathlib.Path, doc: dict[str, t.Any]
+        self, path: str, doc: dict[str, t.Any]
     ) -> jsonschema.protocols.Validator:
         try:
             return self._schema_loader.get_validator(

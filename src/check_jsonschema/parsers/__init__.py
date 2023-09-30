@@ -4,7 +4,6 @@ import io
 import json
 import pathlib
 import typing as t
-from io import TextIOWrapper
 
 import ruamel.yaml
 
@@ -85,8 +84,7 @@ class ParserSet:
         )
 
     def parse_data_with_path(
-        # self, data: t.BinaryIO | bytes, path: pathlib.Path | str, default_filetype: str
-        self, data: t.TextIO, path: pathlib.Path | str, default_filetype: str
+        self, data: t.BinaryIO | bytes, path: pathlib.Path | str, default_filetype: str
     ) -> t.Any:
         loadfunc = self.get(path, default_filetype)
         try:
@@ -96,8 +94,7 @@ class ParserSet:
         except LOADING_FAILURE_ERROR_TYPES as e:
             raise FailedFileLoadError(f"Failed to parse {path}") from e
 
-    # def parse_file(self, path: pathlib.Path | str, default_filetype: str) -> t.Any:
-    def parse_file(self, path: TextIOWrapper, default_filetype: str) -> t.Any:
-        # with open(path, "rb") as fp:
-        #     return self.parse_data_with_path(fp, path, default_filetype)
-        return self.parse_data_with_path(path, path.name, default_filetype)
+    # click gives file objects, why is this opening files from paths?
+    def parse_file(self, path: pathlib.Path | str, default_filetype: str) -> t.Any:
+        with open(path, "rb") as fp:
+            return self.parse_data_with_path(fp, path, default_filetype)

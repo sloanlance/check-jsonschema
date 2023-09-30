@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import textwrap
-from io import TextIOWrapper
+import typing as t
 
 import click
 import jsonschema
@@ -59,13 +59,11 @@ def pretty_helptext_list(values: list[str] | tuple[str, ...]) -> str:
 class FilesDefaultStdin(click.Argument):
     def __init__(self, *args, **kwargs):
         kwargs['nargs'] = -1
-        kwargs['type'] = click.File('r')  # will work with '-' for stdin?
-        # kwargs['type'] = click.Path()  # works with '/dev/stdin'
+        kwargs['type'] = click.File('rb')
         super().__init__(*args, **kwargs)
 
     def process_value(self, ctx, value):
         return super().process_value(ctx, value or ('-',))
-        # return super().process_value(ctx, value or ('/dev/stdin',))
 
 
 @click.command(
@@ -230,7 +228,6 @@ The '--disable-formats' flag supports the following formats:
     help="Reduce output verbosity",
     count=True,
 )
-# @click.argument("instancefiles", required=True, nargs=-1)
 @click.argument("instancefiles", cls=FilesDefaultStdin)
 def main(
         *,
@@ -250,8 +247,7 @@ def main(
         output_format: str,
         verbose: int,
         quiet: int,
-        # instancefiles: tuple[str, ...],
-        instancefiles: tuple[TextIOWrapper, ...],
+        instancefiles: tuple[t.BinaryIO, ...],
 ) -> None:
     args = ParseResult()
 

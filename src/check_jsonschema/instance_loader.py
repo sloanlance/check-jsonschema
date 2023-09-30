@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import pathlib
 import typing as t
-from io import TextIOWrapper
 
 from .parsers import ParseError, ParserSet
 from .transforms import Transform
@@ -11,12 +9,11 @@ from .transforms import Transform
 class InstanceLoader:
     def __init__(
         self,
-        # filenames: t.Sequence[str],
-        filenames: t.Sequence[TextIOWrapper],
+        files: t.Sequence[t.BinaryIO],
         default_filetype: str = "json",
         data_transform: Transform | None = None,
     ) -> None:
-        self._filenames = filenames
+        self._files = files
         self._default_filetype = default_filetype
         self._data_transform = (
             data_transform if data_transform is not None else Transform()
@@ -26,15 +23,14 @@ class InstanceLoader:
             modify_yaml_implementation=self._data_transform.modify_yaml_implementation
         )
 
-    def iter_files(self) -> t.Iterator[tuple[pathlib.Path, ParseError | t.Any]]:
-        for fn in self._filenames:
-            # path = pathlib.Path(fn)
+    def iter_files(self) -> t.Iterator[tuple[str, ParseError | t.Any]]:
+        for file in self._files:
             try:
-                # data: t.Any = self._parsers.parse_file(path, self._default_filetype)
-                data: t.Any = self._parsers.parse_file(fn, self._default_filetype)
+                data: t.Any = self._parsers.parse_data_with_path(
+                    file, file.name, self._default_filetype
+                )
             except ParseError as err:
                 data = err
             else:
                 data = self._data_transform(data)
-            # yield (path, data)
-            yield (fn.name, data)
+            yield (file.name, data)

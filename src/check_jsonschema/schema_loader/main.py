@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pathlib
 import typing as t
 import urllib.error
 import urllib.parse
@@ -47,7 +46,7 @@ def _extend_with_default(
 class SchemaLoaderBase:
     def get_validator(
         self,
-        path: pathlib.Path,
+        path: str,
         instance_doc: dict[str, t.Any],
         format_opts: FormatOptions,
         fill_defaults: bool,
@@ -117,7 +116,7 @@ class SchemaLoader(SchemaLoaderBase):
 
     def get_validator(
         self,
-        path: pathlib.Path,
+        path: str,
         instance_doc: dict[str, t.Any],
         format_opts: FormatOptions,
         fill_defaults: bool,
@@ -189,7 +188,7 @@ class MetaSchemaLoader(SchemaLoaderBase):
 
     def get_validator(
         self,
-        path: pathlib.Path,
+        path: str,
         instance_doc: dict[str, t.Any],
         format_opts: FormatOptions,
         fill_defaults: bool,
