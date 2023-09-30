@@ -27,8 +27,7 @@ BUILTIN_SCHEMA_NAMES = [f"vendor.{k}" for k in SCHEMA_CATALOG.keys()] + [
     f"custom.{k}" for k in CUSTOM_SCHEMA_NAMES
 ]
 BUILTIN_SCHEMA_CHOICES = (
-        BUILTIN_SCHEMA_NAMES + list(
-    SCHEMA_CATALOG.keys()) + CUSTOM_SCHEMA_NAMES
+    BUILTIN_SCHEMA_NAMES + list(SCHEMA_CATALOG.keys()) + CUSTOM_SCHEMA_NAMES
 )
 
 
@@ -156,8 +155,7 @@ The '--disable-formats' flag supports the following formats:
             "If `--disable-formats regex` is used, this option has no effect."
     ),
     default=RegexVariantName.default.value,
-    type=click.Choice([x.value for x in RegexVariantName],
-                      case_sensitive=False),
+    type=click.Choice([x.value for x in RegexVariantName], case_sensitive=False),
 )
 @click.option(
     "--default-filetype",
